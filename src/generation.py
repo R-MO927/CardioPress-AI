@@ -1,7 +1,3 @@
-from sympy import python
-
-
-python
 # ============================================================
 # CardioPress AI
 # LLM Generation Module
@@ -235,7 +231,35 @@ def generate_answer(
             ]
         )
 
+        # ====================================================
+        # DEBUG GEMINI RESPONSE
+        # ====================================================
+
+        print(
+            "===== GEMINI RESPONSE ====="
+        )
+
+        print(
+            response
+        )
+
+        print(
+            "============================"
+        )
+
     except Exception as e:
+
+        print(
+            "===== GEMINI GENERATION ERROR ====="
+        )
+
+        print(
+            repr(e)
+        )
+
+        print(
+            "===================================="
+        )
 
         return {
             "answer": "",
@@ -246,20 +270,102 @@ def generate_answer(
             "generation_error": str(e)
         }
 
-    answer = ""
+    # ========================================================
+    # EXTRACT ANSWER
+    # ========================================================
 
-    if response is not None:
-
-        answer = getattr(
-            response,
-            "text",
-            ""
-        )
+    answer = getattr(
+        response,
+        "text",
+        ""
+    )
 
     if answer is None:
         answer = ""
 
     answer = answer.strip()
+
+    # ========================================================
+    # DEBUG GENERATED ANSWER
+    # ========================================================
+
+    print(
+        "===== GEMINI ANSWER ====="
+    )
+
+    print(
+        repr(answer)
+    )
+
+    print(
+        "=========================="
+    )
+
+    # ========================================================
+    # DEBUG RESPONSE METADATA
+    # ========================================================
+
+    try:
+
+        print(
+            "===== GEMINI RESPONSE METADATA ====="
+        )
+
+        print(
+            "Model:",
+            GEMINI_MODEL
+        )
+
+        print(
+            "Response type:",
+            type(response)
+        )
+
+        if hasattr(response, "candidates"):
+
+            print(
+                "Candidates:",
+                len(response.candidates)
+                if response.candidates
+                else 0
+            )
+
+            if response.candidates:
+
+                candidate = response.candidates[0]
+
+                print(
+                    "Finish reason:",
+                    getattr(
+                        candidate,
+                        "finish_reason",
+                        None
+                    )
+                )
+
+                print(
+                    "Safety ratings:",
+                    getattr(
+                        candidate,
+                        "safety_ratings",
+                        None
+                    )
+                )
+
+        print(
+            "======================================"
+        )
+
+    except Exception as debug_error:
+
+        print(
+            "Could not inspect response metadata:",
+            repr(debug_error)
+        )
+
+    # ========================================================
+    # CITATION EXTRACTION
+    # ========================================================
 
     evidence_references = (
         extract_evidence_references(
@@ -275,9 +381,17 @@ def generate_answer(
         evidence_results
     )
 
+    # ========================================================
+    # REFUSAL
+    # ========================================================
+
     refusal = detect_refusal(
         answer
     )
+
+    # ========================================================
+    # FINAL RESULT
+    # ========================================================
 
     return {
         "answer": answer,
@@ -326,4 +440,3 @@ def validate_generation_result(
         return False
 
     return True
-
