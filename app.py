@@ -1,8 +1,10 @@
 from pathlib import Path
 import base64
 import html
+import os
 
 import streamlit as st
+from dotenv import load_dotenv
 
 from src.retrieval import CardioPressRetriever
 from src.generation import generate_answer
@@ -29,16 +31,83 @@ HEART_PATH = ROOT / "assets" / "heart_background.png"
 
 
 # ============================================================
-# LOAD BACKGROUND
+# ENVIRONMENT / SECRETS
+# ============================================================
+
+# Local development:
+# load variables from .env if it exists.
+ENV_PATH = ROOT / ".env"
+
+if ENV_PATH.exists():
+    load_dotenv(ENV_PATH)
+
+
+def get_secret(name: str, default=None):
+    """
+    Safely get a configuration value.
+
+    Priority:
+    1. Streamlit Secrets
+    2. Environment variable
+    3. Default value
+    """
+
+    # --------------------------------------------------------
+    # Streamlit Cloud / Streamlit Secrets
+    # --------------------------------------------------------
+
+    try:
+
+        value = st.secrets.get(name)
+
+        if value is not None and str(value).strip():
+
+            return str(value).strip()
+
+    except Exception:
+        pass
+
+    # --------------------------------------------------------
+    # Local environment / .env
+    # --------------------------------------------------------
+
+    value = os.getenv(name)
+
+    if value is not None and value.strip():
+
+        return value.strip()
+
+    return default
+
+
+GEMINI_API_KEY = get_secret(
+    "GEMINI_API_KEY"
+)
+
+GEMINI_MODEL = get_secret(
+    "GEMINI_MODEL",
+    "gemini-3-flash-preview"
+)
+
+
+# ============================================================
+# BACKGROUND IMAGE
 # ============================================================
 
 heart_base64 = ""
 
 if HEART_PATH.exists():
+
     try:
+
         heart_bytes = HEART_PATH.read_bytes()
-        heart_base64 = base64.b64encode(heart_bytes).decode("utf-8")
+
+        heart_base64 = base64.b64encode(
+            heart_bytes
+        ).decode("utf-8")
+
     except Exception:
+
         heart_base64 = ""
 
 
@@ -48,17 +117,24 @@ if HEART_PATH.exists():
 
 @st.cache_resource
 def load_retriever():
+
     return CardioPressRetriever()
 
 
 try:
+
     retriever = load_retriever()
+
     retriever_ready = True
+
     retriever_error = None
 
 except Exception as error:
+
     retriever = None
+
     retriever_ready = False
+
     retriever_error = error
 
 
@@ -67,6 +143,7 @@ except Exception as error:
 # ============================================================
 
 if heart_base64:
+
     background_css = f"""
         background-image:
             linear-gradient(
@@ -74,12 +151,15 @@ if heart_base64:
                 rgba(3, 5, 11, 0.84)
             ),
             url("data:image/png;base64,{heart_base64}");
+
         background-size: cover;
         background-position: center center;
         background-repeat: no-repeat;
         background-attachment: fixed;
     """
+
 else:
+
     background_css = """
         background:
             radial-gradient(
@@ -322,6 +402,7 @@ st.html(
             font-size:1.18rem;
             font-weight:800;
         ">
+
             <span style="
                 color:#ff4f7b;
                 font-size:1.55rem;
@@ -333,6 +414,7 @@ st.html(
             <span>
                 CardioPress AI
             </span>
+
         </div>
 
         <div style="
@@ -342,6 +424,7 @@ st.html(
             font-size:0.84rem;
             font-weight:500;
         ">
+
             <span style="
                 width:8px;
                 height:8px;
@@ -353,6 +436,7 @@ st.html(
             "></span>
 
             Evidence system ready
+
         </div>
 
     </div>
@@ -361,15 +445,41 @@ st.html(
 
 
 # ============================================================
+# CONFIGURATION STATUS
+# ============================================================
+
+if not GEMINI_API_KEY:
+
+    st.error(
+        "Gemini API configuration is missing."
+    )
+
+    st.info(
+        "For Streamlit Cloud, add GEMINI_API_KEY "
+        "to your app Secrets. For local development, "
+        "you can keep it inside .env."
+    )
+
+
+# ============================================================
 # RETRIEVER STATUS
 # ============================================================
 
 if not retriever_ready:
-    st.error("CardioPress retrieval system could not be loaded.")
+
+    st.error(
+        "CardioPress retrieval system could not be loaded."
+    )
 
     if retriever_error is not None:
-        with st.expander("Show technical error"):
-            st.exception(retriever_error)
+
+        with st.expander(
+            "Show technical error"
+        ):
+
+            st.exception(
+                retriever_error
+            )
 
 
 # ============================================================
@@ -485,8 +595,6 @@ st.html(
             retrieved cardiovascular clinical evidence.
         </div>
 
-
-        <!-- ECG -->
 
         <div style="
             width:100%;
@@ -658,6 +766,7 @@ suggestions = [
     "What lifestyle changes can help reduce cardiovascular risk?",
 ]
 
+
 selected_question = st.selectbox(
     "Suggested questions",
     suggestions,
@@ -668,6 +777,7 @@ if (
     selected_question != "Choose a suggested question..."
     and not question.strip()
 ):
+
     question = selected_question
 
 
@@ -698,7 +808,24 @@ if ask_button:
 
 
     # --------------------------------------------------------
-    # RETRIEVER NOT READY
+    # API KEY
+    # --------------------------------------------------------
+
+    elif not GEMINI_API_KEY:
+
+        st.error(
+            "Gemini API key is not configured."
+        )
+
+        st.info(
+            "If this app is deployed publicly on "
+            "Streamlit Cloud, add GEMINI_API_KEY "
+            "under App Settings → Secrets."
+        )
+
+
+    # --------------------------------------------------------
+    # RETRIEVER
     # --------------------------------------------------------
 
     elif not retriever_ready:
@@ -734,7 +861,13 @@ if ask_button:
                     "Retrieval error."
                 )
 
-                st.exception(error)
+                with st.expander(
+                    "Show technical details"
+                ):
+
+                    st.exception(
+                        error
+                    )
 
                 evidence = []
 
@@ -762,7 +895,13 @@ if ask_button:
                         "Generation error."
                     )
 
-                    st.exception(error)
+                    with st.expander(
+                        "Show technical details"
+                    ):
+
+                        st.exception(
+                            error
+                        )
 
                     result = None
 
@@ -772,6 +911,54 @@ if ask_button:
             # =================================================
 
             if result:
+
+                # =============================================
+                # GENERATION ERROR
+                # =============================================
+
+                generation_error = result.get(
+                    "generation_error"
+                )
+
+                if generation_error:
+
+                    st.error(
+                        "The AI generation service could "
+                        "not generate an answer."
+                    )
+
+                    with st.expander(
+                        "Show technical details"
+                    ):
+
+                        st.code(
+                            str(generation_error)
+                        )
+
+                    st.stop()
+
+
+                # =============================================
+                # EMPTY ANSWER
+                # =============================================
+
+                answer = result.get(
+                    "answer",
+                    ""
+                )
+
+                if not answer or not answer.strip():
+
+                    st.error(
+                        "The AI returned an empty answer."
+                    )
+
+                    st.stop()
+
+
+                # =============================================
+                # REFUSAL
+                # =============================================
 
                 refusal = result.get(
                     "refusal",
@@ -789,30 +976,18 @@ if ask_button:
                         """
                         <div style="
                             margin-top:32px;
-
                             padding:30px;
-
                             text-align:center;
-
                             border-radius:25px;
-
-                            background:
-                                rgba(7,9,16,0.86);
-
-                            border:
-                                1px solid
-                                rgba(255,193,7,0.18);
-
+                            background:rgba(7,9,16,0.86);
+                            border:1px solid rgba(255,193,7,0.18);
                             backdrop-filter:blur(18px);
                         ">
 
                             <div style="
                                 color:#ffffff;
-
                                 font-size:1.55rem;
-
                                 font-weight:850;
-
                                 margin-bottom:12px;
                             ">
                                 🛡️ Safety Response
@@ -820,13 +995,9 @@ if ask_button:
 
                             <div style="
                                 max-width:700px;
-
                                 margin:auto;
-
                                 color:#aeb6c3;
-
                                 font-size:0.96rem;
-
                                 line-height:1.6;
                             ">
                                 I don't have sufficient evidence
@@ -853,36 +1024,22 @@ if ask_button:
                         """
                         <div style="
                             margin-top:32px;
-
                             padding:30px 30px 10px;
-
                             border-radius:26px 26px 0 0;
-
-                            background:
-                                rgba(6,8,15,0.86);
-
-                            border:
-                                1px solid
-                                rgba(255,82,125,0.18);
-
+                            background:rgba(6,8,15,0.86);
+                            border:1px solid rgba(255,82,125,0.18);
                             border-bottom:none;
-
                             backdrop-filter:blur(18px);
-
                             box-shadow:
                                 0 25px 75px
                                 rgba(0,0,0,0.30);
-
                             text-align:center;
                         ">
 
                             <div style="
                                 color:#ffffff;
-
                                 font-size:1.65rem;
-
                                 font-weight:850;
-
                                 margin-bottom:15px;
                             ">
                                 🫀
@@ -900,17 +1057,14 @@ if ask_button:
                     # ANSWER
                     # -----------------------------------------
 
-                    answer = result.get(
-                        "answer",
-                        "No answer was generated.",
-                    )
-
                     st.markdown(
                         '<div class="answer-content">',
                         unsafe_allow_html=True,
                     )
 
-                    st.markdown(answer)
+                    st.markdown(
+                        answer
+                    )
 
                     st.markdown(
                         "</div>",
@@ -927,31 +1081,19 @@ if ask_button:
                         [],
                     )
 
+
                     if cited_chunks:
 
                         st.html(
                             """
                             <div style="
                                 margin-top:0;
-
                                 padding:26px;
-
-                                border-radius:
-                                    0 0 24px 24px;
-
-                                background:
-                                    rgba(7,9,16,0.82);
-
-                                border:
-                                    1px solid
-                                    rgba(255,255,255,0.09);
-
-                                border-top:
-                                    1px solid
-                                    rgba(255,82,125,0.10);
-
+                                border-radius:0 0 24px 24px;
+                                background:rgba(7,9,16,0.82);
+                                border:1px solid rgba(255,255,255,0.09);
+                                border-top:1px solid rgba(255,82,125,0.10);
                                 backdrop-filter:blur(18px);
-
                                 box-shadow:
                                     0 20px 55px
                                     rgba(0,0,0,0.25);
@@ -959,13 +1101,9 @@ if ask_button:
 
                                 <div style="
                                     text-align:center;
-
                                     color:#ffffff;
-
                                     font-size:1.55rem;
-
                                     font-weight:850;
-
                                     margin-bottom:7px;
                                 ">
                                     📚 Evidence Sources
@@ -973,11 +1111,8 @@ if ask_button:
 
                                 <div style="
                                     text-align:center;
-
                                     color:#929aa8;
-
                                     font-size:0.86rem;
-
                                     margin-bottom:20px;
                                 ">
                                     Clinical evidence retrieved
@@ -986,8 +1121,9 @@ if ask_button:
                             """
                         )
 
+
                         # =====================================
-                        # CITED EVIDENCE SOURCES
+                        # CITED SOURCES
                         # =====================================
 
                         for chunk_id in cited_chunks:
@@ -1000,32 +1136,22 @@ if ask_button:
                                 f"""
                                 <div style="
                                     display:flex;
-
                                     align-items:center;
-
                                     padding:13px 16px;
-
                                     margin-bottom:9px;
-
                                     border-radius:13px;
-
                                     background:
                                         rgba(255,255,255,0.035);
-
                                     border:
                                         1px solid
                                         rgba(255,255,255,0.06);
-
                                     color:#d5dae2;
-
                                     font-size:0.94rem;
                                 ">
 
                                     <span style="
                                         color:#ff668b;
-
                                         margin-right:10px;
-
                                         font-size:1rem;
                                     ">
                                         🫀
@@ -1047,7 +1173,7 @@ if ask_button:
 
 
                         # =====================================
-                        # AVAILABLE EVIDENCE DETAILS
+                        # EVIDENCE DETAILS
                         # =====================================
 
                         st.html(
@@ -1055,7 +1181,6 @@ if ask_button:
                             <div style="
                                 margin-top:22px;
                                 padding-top:22px;
-
                                 border-top:
                                     1px solid
                                     rgba(255,255,255,0.08);
@@ -1063,13 +1188,9 @@ if ask_button:
 
                                 <div style="
                                     text-align:center;
-
                                     color:#ffffff;
-
                                     font-size:1.35rem;
-
                                     font-weight:850;
-
                                     margin-bottom:8px;
                                 ">
                                     🔎 Retrieved Evidence Details
@@ -1077,28 +1198,27 @@ if ask_button:
 
                                 <div style="
                                     text-align:center;
-
                                     color:#929aa8;
-
                                     font-size:0.84rem;
-
                                     margin-bottom:22px;
                                 ">
                                     Details of the clinical evidence
                                     retrieved for this question.
                                 </div>
-
                             """
                         )
 
 
                         # =====================================
-                        # SHOW DETAILS ONE UNDER ANOTHER
+                        # SHOW CITED EVIDENCE
                         # =====================================
 
                         for item in evidence:
 
-                            if item.get("chunk_id") not in cited_chunks:
+                            if item.get(
+                                "chunk_id"
+                            ) not in cited_chunks:
+
                                 continue
 
 
@@ -1127,9 +1247,15 @@ if ask_button:
                                 0
                             )
 
+
                             try:
-                                safe_score = f"{float(score_value):.4f}"
+
+                                safe_score = (
+                                    f"{float(score_value):.4f}"
+                                )
+
                             except Exception:
+
                                 safe_score = html.escape(
                                     str(score_value)
                                 )
@@ -1159,9 +1285,7 @@ if ask_button:
                                 f"""
                                 <div style="
                                     margin-bottom:18px;
-
                                     padding:22px;
-
                                     border-radius:18px;
 
                                     background:
@@ -1180,18 +1304,15 @@ if ask_button:
                                         rgba(0,0,0,0.16);
                                 ">
 
-                                    <!-- SOURCE -->
 
                                     <div style="
                                         display:flex;
                                         align-items:center;
-
                                         margin-bottom:15px;
                                     ">
 
                                         <span style="
                                             display:flex;
-
                                             align-items:center;
                                             justify-content:center;
 
@@ -1212,17 +1333,14 @@ if ask_button:
                                             🫀
                                         </span>
 
+
                                         <div>
 
                                             <div style="
                                                 color:#8f98a7;
-
                                                 font-size:0.75rem;
-
                                                 margin-bottom:3px;
-
                                                 text-transform:uppercase;
-
                                                 letter-spacing:0.8px;
                                             ">
                                                 Evidence Source
@@ -1230,9 +1348,7 @@ if ask_button:
 
                                             <div style="
                                                 color:#ffffff;
-
                                                 font-size:1.05rem;
-
                                                 font-weight:800;
                                             ">
                                                 {safe_id}
@@ -1243,11 +1359,8 @@ if ask_button:
                                     </div>
 
 
-                                    <!-- METADATA -->
-
                                     <div style="
                                         display:grid;
-
                                         grid-template-columns:
                                             repeat(
                                                 3,
@@ -1255,18 +1368,15 @@ if ask_button:
                                             );
 
                                         gap:10px;
-
                                         margin-bottom:16px;
                                     ">
 
+
                                         <div style="
                                             padding:12px;
-
                                             border-radius:12px;
-
                                             background:
                                                 rgba(0,0,0,0.16);
-
                                             border:
                                                 1px solid
                                                 rgba(255,255,255,0.05);
@@ -1274,9 +1384,7 @@ if ask_button:
 
                                             <div style="
                                                 color:#858e9d;
-
                                                 font-size:0.72rem;
-
                                                 margin-bottom:5px;
                                             ">
                                                 Rank
@@ -1284,9 +1392,7 @@ if ask_button:
 
                                             <div style="
                                                 color:#ffffff;
-
                                                 font-size:0.92rem;
-
                                                 font-weight:750;
                                             ">
                                                 {safe_rank}
@@ -1297,12 +1403,9 @@ if ask_button:
 
                                         <div style="
                                             padding:12px;
-
                                             border-radius:12px;
-
                                             background:
                                                 rgba(0,0,0,0.16);
-
                                             border:
                                                 1px solid
                                                 rgba(255,255,255,0.05);
@@ -1310,9 +1413,7 @@ if ask_button:
 
                                             <div style="
                                                 color:#858e9d;
-
                                                 font-size:0.72rem;
-
                                                 margin-bottom:5px;
                                             ">
                                                 Similarity Score
@@ -1320,9 +1421,7 @@ if ask_button:
 
                                             <div style="
                                                 color:#ff91aa;
-
                                                 font-size:0.92rem;
-
                                                 font-weight:750;
                                             ">
                                                 {safe_score}
@@ -1333,12 +1432,9 @@ if ask_button:
 
                                         <div style="
                                             padding:12px;
-
                                             border-radius:12px;
-
                                             background:
                                                 rgba(0,0,0,0.16);
-
                                             border:
                                                 1px solid
                                                 rgba(255,255,255,0.05);
@@ -1346,9 +1442,7 @@ if ask_button:
 
                                             <div style="
                                                 color:#858e9d;
-
                                                 font-size:0.72rem;
-
                                                 margin-bottom:5px;
                                             ">
                                                 Chunk Index
@@ -1356,9 +1450,7 @@ if ask_button:
 
                                             <div style="
                                                 color:#ffffff;
-
                                                 font-size:0.92rem;
-
                                                 font-weight:750;
                                             ">
                                                 {safe_index}
@@ -1369,17 +1461,11 @@ if ask_button:
                                     </div>
 
 
-                                    <!-- TEXT -->
-
                                     <div style="
                                         color:#858e9d;
-
                                         font-size:0.75rem;
-
                                         text-transform:uppercase;
-
                                         letter-spacing:0.7px;
-
                                         margin-bottom:8px;
                                     ">
                                         Retrieved Clinical Text
@@ -1388,28 +1474,21 @@ if ask_button:
 
                                     <div style="
                                         padding:17px;
-
                                         border-radius:13px;
-
                                         background:
                                             rgba(0,0,0,0.22);
-
                                         border:
                                             1px solid
                                             rgba(255,255,255,0.05);
-
                                         color:#cbd1da;
-
                                         font-size:0.90rem;
-
                                         line-height:1.75;
-
                                         white-space:pre-wrap;
-
                                         word-break:break-word;
                                     ">
                                         {safe_text}
                                     </div>
+
 
                                 </div>
                                 """
@@ -1419,7 +1498,6 @@ if ask_button:
                         st.html(
                             """
                             </div>
-
                             </div>
                             """
                         )
@@ -1433,6 +1511,7 @@ if ask_button:
                         "invalid_references",
                         [],
                     )
+
 
                     if invalid_refs:
 
