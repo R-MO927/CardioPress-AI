@@ -1,0 +1,52 @@
+{
+  "notebook": "03_RAG_Generation",
+  "step": "8.7.4",
+  "timestamp": "2026-08-19T02:23:47.776530",
+  "benchmark_size": 12,
+  "accepted_qids": [
+    "Q02",
+    "Q05",
+    "Q06",
+    "Q07",
+    "Q09"
+  ],
+  "retry_qids": [
+    "Q01",
+    "Q03",
+    "Q04",
+    "Q08",
+    "Q10",
+    "Q11",
+    "Q12"
+  ],
+  "in_scope_retry": [
+    "Q01",
+    "Q03",
+    "Q04",
+    "Q08",
+    "Q10"
+  ],
+  "out_of_scope_retry": [
+    "Q11",
+    "Q12"
+  ],
+  "final_retrieval_config": {
+    "chunking": "Experiment B — 700–900 tokens",
+    "overlap": "10%",
+    "embedding_dimension": 384,
+    "retriever": "Semantic Retrieval",
+    "top_k": 10,
+    "cross_encoder": false
+  },
+  "status": {
+    "retrieval_evaluation": "completed",
+    "precision_evaluation": "completed",
+    "safety_prompt": "validated",
+    "structured_output": "validated",
+    "citation_schema": "validated",
+    "refusal_behavior": "validated",
+    "confidence_logic": "validated",
+    "generation": "partially_completed",
+    "gemini_quota": "temporarily_exhausted"
+  }
+}

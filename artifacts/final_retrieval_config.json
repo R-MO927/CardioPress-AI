@@ -1,0 +1,16 @@
+{
+  "experiment": "B",
+  "chunk_size": "700–900 tokens",
+  "overlap": "10%",
+  "retrieval_method": "Semantic",
+  "top_k": 10,
+  "embedding_dimension": 384,
+  "benchmark_size": 12,
+  "best_hybrid_alpha": 0.75,
+  "cross_encoder_enabled": false,
+  "semantic_recall_at_1": 0.3333,
+  "semantic_recall_at_3": 0.3333,
+  "semantic_recall_at_5": 0.4167,
+  "semantic_recall_at_10": 0.6667,
+  "semantic_mrr": 0.2252
+}

@@ -1,0 +1,128 @@
+[
+  {
+    "id": "Q01",
+    "query": "How does reducing salt intake help prevent hypertension?",
+    "question_type": "direct",
+    "expected_section": "Module 2.4 — Healthy Diet",
+    "expected_pages": [
+      149,
+      150,
+      151,
+      152,
+      153
+    ],
+    "expected_evidence": "Reducing salt intake to less than 5 g per day helps prevent hypertension and reduces cardiovascular risk."
+  },
+  {
+    "id": "Q02",
+    "query": "What is hypertension?",
+    "question_type": "direct",
+    "expected_section": "Module 3.2 — Hypertension",
+    "expected_pages": [
+      247
+    ],
+    "expected_evidence": "Definition and basic description of hypertension."
+  },
+  {
+    "id": "Q03",
+    "query": "What are the recommended physical activity levels for adults?",
+    "question_type": "direct",
+    "expected_section": "Module 2.5 — Physical Activity",
+    "expected_pages": [
+      168
+    ],
+    "expected_evidence": "Adults should perform at least 150 minutes of physical activity per week."
+  },
+  {
+    "id": "Q04",
+    "query": "Why is eating less salt beneficial for people at risk of high blood pressure?",
+    "question_type": "paraphrased",
+    "expected_section": "Module 2.4 — Healthy Diet",
+    "expected_pages": [
+      149,
+      153
+    ],
+    "expected_evidence": "Lower salt consumption helps prevent hypertension and reduces the risk of heart disease and stroke."
+  },
+  {
+    "id": "Q05",
+    "query": "What lifestyle activity can help control blood pressure and reduce cardiovascular risk?",
+    "question_type": "paraphrased",
+    "expected_section": "Module 2.5 — Physical Activity",
+    "expected_pages": [
+      168
+    ],
+    "expected_evidence": "Regular physical activity can help control blood pressure and reduce the risk of hypertension, heart attack and stroke."
+  },
+  {
+    "id": "Q06",
+    "query": "What lifestyle recommendations can help reduce BP?",
+    "question_type": "abbreviation",
+    "expected_section": "Module 3.2 — Hypertension",
+    "expected_pages": [
+      247,
+      254,
+      255,
+      256
+    ],
+    "expected_evidence": "Lifestyle and management recommendations for hypertension and blood pressure control."
+  },
+  {
+    "id": "Q07",
+    "query": "What factors increase CVD risk?",
+    "question_type": "abbreviation",
+    "expected_section": "Module 3.1 — Cardiovascular Diseases",
+    "expected_pages": [
+      225
+    ],
+    "expected_evidence": "Risk factors and prevention of cardiovascular diseases."
+  },
+  {
+    "id": "Q08",
+    "query": "How much salt should adults consume per day?",
+    "question_type": "threshold",
+    "expected_section": "Module 2.4 — Healthy Diet",
+    "expected_pages": [
+      149,
+      153
+    ],
+    "expected_evidence": "Salt intake should be less than 5 g per day."
+  },
+  {
+    "id": "Q09",
+    "query": "How many minutes of physical activity should adults perform each week?",
+    "question_type": "threshold",
+    "expected_section": "Module 2.5 — Physical Activity",
+    "expected_pages": [
+      168
+    ],
+    "expected_evidence": "Adults should perform at least 150 minutes of physical activity per week."
+  },
+  {
+    "id": "Q10",
+    "query": "What percentage of total energy intake should come from fat?",
+    "question_type": "threshold",
+    "expected_section": "Module 2.4 — Healthy Diet",
+    "expected_pages": [
+      149,
+      153
+    ],
+    "expected_evidence": "Total fat should not exceed 30% of total energy intake."
+  },
+  {
+    "id": "Q11",
+    "query": "What is the recommended treatment for bacterial pneumonia in children?",
+    "question_type": "out_of_scope",
+    "expected_section": null,
+    "expected_pages": [],
+    "expected_evidence": null
+  },
+  {
+    "id": "Q12",
+    "query": "What is the recommended insulin dose for type 1 diabetes?",
+    "question_type": "out_of_scope",
+    "expected_section": null,
+    "expected_pages": [],
+    "expected_evidence": null
+  }
+]

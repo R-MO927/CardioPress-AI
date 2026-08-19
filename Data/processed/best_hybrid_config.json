@@ -1,0 +1,25 @@
+{
+    "best_alpha": 0.75,
+    "semantic_weight": 0.75,
+    "bm25_weight": 0.25,
+    "experiment_A": {
+        "best_alpha": 0.75,
+        "metrics": {
+            "Recall@1": 0.08333333333333333,
+            "Recall@3": 0.16666666666666666,
+            "Recall@5": 0.3333333333333333,
+            "Recall@10": 0.4166666666666667,
+            "MRR": 0.16666666666666666
+        }
+    },
+    "experiment_B": {
+        "best_alpha": 0.75,
+        "metrics": {
+            "Recall@1": 0.16666666666666666,
+            "Recall@3": 0.25,
+            "Recall@5": 0.25,
+            "Recall@10": 0.5,
+            "MRR": 0.22394179894179891
+        }
+    }
+}
