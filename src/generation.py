@@ -9,6 +9,11 @@ import re
 from dotenv import load_dotenv
 from google import genai
 
+
+# ============================================================
+# LOAD PROJECT MODULES
+# ============================================================
+
 from .prompts import SYSTEM_PROMPT, build_grounded_prompt
 
 
@@ -34,14 +39,12 @@ load_dotenv(ENV_PATH)
 # GEMINI CONFIGURATION
 # ============================================================
 
-GEMINI_API_KEY = os.getenv(
-    "GEMINI_API_KEY"
-)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 GEMINI_MODEL = os.getenv(
     "GEMINI_MODEL",
-    "gemini-3-flash-preview"
-)
+    "gemini-3.6-flash"
+).strip()
 
 
 # ============================================================
@@ -49,7 +52,6 @@ GEMINI_MODEL = os.getenv(
 # ============================================================
 
 if not GEMINI_API_KEY:
-
     raise RuntimeError(
         "GEMINI_API_KEY was not found in .env"
     )
@@ -68,18 +70,17 @@ client = genai.Client(
 # CITATION EXTRACTION
 # ============================================================
 
-def extract_evidence_references(
-    answer
-):
+def extract_evidence_references(answer):
     """
     Extract [EVIDENCE X] references from
     the generated answer.
 
     Example:
-        [EVIDENCE 1], [EVIDENCE 4]
+        [EVIDENCE 1]
+        [EVIDENCE 4]
 
     Returns:
-        [1, 4]
+        list[int]
     """
 
     if not answer:
@@ -104,7 +105,7 @@ def extract_evidence_references(
 
 
 # ============================================================
-# MAP EVIDENCE REFERENCES → CHUNK IDS
+# MAP REFERENCES TO CHUNK IDS
 # ============================================================
 
 def map_evidence_to_chunks(
@@ -112,12 +113,11 @@ def map_evidence_to_chunks(
     evidence_results
 ):
     """
-    Convert evidence reference numbers into
-    the actual retrieved chunk IDs.
+    Convert evidence reference numbers
+    into actual retrieved chunk IDs.
     """
 
     cited_chunk_ids = []
-
     invalid_references = []
 
     for reference in evidence_references:
@@ -135,13 +135,18 @@ def map_evidence_to_chunks(
 
             continue
 
-        chunk_id = evidence_results[
-            index
-        ]["chunk_id"]
+        chunk = evidence_results[index]
 
-        cited_chunk_ids.append(
-            chunk_id
+        chunk_id = chunk.get(
+            "chunk_id",
+            f"chunk_{index + 1}"
         )
+
+        if chunk_id not in cited_chunk_ids:
+
+            cited_chunk_ids.append(
+                chunk_id
+            )
 
     return (
         cited_chunk_ids,
@@ -155,8 +160,8 @@ def map_evidence_to_chunks(
 
 def detect_refusal(answer):
     """
-    Detect whether the model returned the
-    expected insufficient-evidence response.
+    Detect the expected insufficient-evidence
+    response.
     """
 
     if not answer:
@@ -164,8 +169,16 @@ def detect_refusal(answer):
 
     normalized = answer.strip().lower()
 
-    return (
-        normalized == "insufficient evidence"
+    refusal_phrases = [
+        "insufficient evidence",
+        "insufficient clinical evidence",
+        "not enough evidence",
+        "i don't have sufficient evidence",
+    ]
+
+    return any(
+        phrase in normalized
+        for phrase in refusal_phrases
     )
 
 
@@ -183,10 +196,10 @@ def generate_answer(
     Parameters
     ----------
     question : str
-        User's question.
+        User's clinical question.
 
     evidence_results : list[dict]
-        Top-K retrieved evidence.
+        Retrieved evidence chunks.
 
     Returns
     -------
@@ -194,11 +207,20 @@ def generate_answer(
         Structured generation result.
     """
 
+    # --------------------------------------------------------
+    # VALIDATE QUESTION
+    # --------------------------------------------------------
+
     if not question or not question.strip():
 
         raise ValueError(
             "Question cannot be empty."
         )
+
+
+    # --------------------------------------------------------
+    # VALIDATE EVIDENCE
+    # --------------------------------------------------------
 
     if not evidence_results:
 
@@ -206,60 +228,40 @@ def generate_answer(
             "No evidence was retrieved."
         )
 
+
+    # --------------------------------------------------------
+    # BUILD PROMPT
+    # --------------------------------------------------------
+
     grounded_prompt = build_grounded_prompt(
         question=question,
         evidence_results=evidence_results
     )
 
+
+    # --------------------------------------------------------
+    # FINAL PROMPT
+    # --------------------------------------------------------
+
+    final_prompt = (
+        SYSTEM_PROMPT
+        + "\n\n"
+        + grounded_prompt
+    )
+
+
+    # --------------------------------------------------------
+    # CALL GEMINI
+    # --------------------------------------------------------
+
     try:
 
         response = client.models.generate_content(
             model=GEMINI_MODEL,
-            contents=[
-                {
-                    "role": "user",
-                    "parts": [
-                        {
-                            "text": (
-                                SYSTEM_PROMPT
-                                + "\n\n"
-                                + grounded_prompt
-                            )
-                        }
-                    ]
-                }
-            ]
+            contents=final_prompt,
         )
 
-        # ====================================================
-        # DEBUG GEMINI RESPONSE
-        # ====================================================
-
-        print(
-            "===== GEMINI RESPONSE ====="
-        )
-
-        print(
-            response
-        )
-
-        print(
-            "============================"
-        )
-
-    except Exception as e:
-
-        print(
-            "===== GEMINI GENERATION ERROR ====="
-        )
-
-        print(
-            repr(e)
-        )
-
-        print(
-            "===================================="
-        )
+    except Exception as error:
 
         return {
             "answer": "",
@@ -267,111 +269,64 @@ def generate_answer(
             "evidence_references": [],
             "invalid_references": [],
             "refusal": False,
-            "generation_error": str(e)
+            "generation_error": (
+                f"{type(error).__name__}: {str(error)}"
+            ),
         }
 
-    # ========================================================
-    # EXTRACT ANSWER
-    # ========================================================
 
-    answer = getattr(
-        response,
-        "text",
-        ""
-    )
+    # --------------------------------------------------------
+    # EXTRACT RESPONSE TEXT
+    # --------------------------------------------------------
 
-    if answer is None:
-        answer = ""
+    answer = ""
+
+    if response is not None:
+
+        try:
+
+            answer = response.text or ""
+
+        except Exception:
+
+            answer = ""
+
 
     answer = answer.strip()
 
-    # ========================================================
-    # DEBUG GENERATED ANSWER
-    # ========================================================
 
-    print(
-        "===== GEMINI ANSWER ====="
-    )
+    # --------------------------------------------------------
+    # EMPTY RESPONSE
+    # --------------------------------------------------------
 
-    print(
-        repr(answer)
-    )
+    if not answer:
 
-    print(
-        "=========================="
-    )
+        return {
+            "answer": "",
+            "cited_chunk_ids": [],
+            "evidence_references": [],
+            "invalid_references": [],
+            "refusal": False,
+            "generation_error": (
+                "Gemini returned an empty response."
+            ),
+        }
 
-    # ========================================================
-    # DEBUG RESPONSE METADATA
-    # ========================================================
 
-    try:
-
-        print(
-            "===== GEMINI RESPONSE METADATA ====="
-        )
-
-        print(
-            "Model:",
-            GEMINI_MODEL
-        )
-
-        print(
-            "Response type:",
-            type(response)
-        )
-
-        if hasattr(response, "candidates"):
-
-            print(
-                "Candidates:",
-                len(response.candidates)
-                if response.candidates
-                else 0
-            )
-
-            if response.candidates:
-
-                candidate = response.candidates[0]
-
-                print(
-                    "Finish reason:",
-                    getattr(
-                        candidate,
-                        "finish_reason",
-                        None
-                    )
-                )
-
-                print(
-                    "Safety ratings:",
-                    getattr(
-                        candidate,
-                        "safety_ratings",
-                        None
-                    )
-                )
-
-        print(
-            "======================================"
-        )
-
-    except Exception as debug_error:
-
-        print(
-            "Could not inspect response metadata:",
-            repr(debug_error)
-        )
-
-    # ========================================================
-    # CITATION EXTRACTION
-    # ========================================================
+    # --------------------------------------------------------
+    # EXTRACT CITATIONS
+    # --------------------------------------------------------
 
     evidence_references = (
         extract_evidence_references(
             answer
         )
     )
+
+
+    # --------------------------------------------------------
+    # MAP CITATIONS TO CHUNKS
+    # --------------------------------------------------------
 
     (
         cited_chunk_ids,
@@ -381,17 +336,19 @@ def generate_answer(
         evidence_results
     )
 
-    # ========================================================
+
+    # --------------------------------------------------------
     # REFUSAL
-    # ========================================================
+    # --------------------------------------------------------
 
     refusal = detect_refusal(
         answer
     )
 
-    # ========================================================
-    # FINAL RESULT
-    # ========================================================
+
+    # --------------------------------------------------------
+    # RETURN RESULT
+    # --------------------------------------------------------
 
     return {
         "answer": answer,
@@ -399,20 +356,18 @@ def generate_answer(
         "evidence_references": evidence_references,
         "invalid_references": invalid_references,
         "refusal": refusal,
-        "generation_error": None
+        "generation_error": None,
     }
 
 
 # ============================================================
-# SIMPLE VALIDATION
+# VALIDATE GENERATION RESULT
 # ============================================================
 
-def validate_generation_result(
-    result
-):
+def validate_generation_result(result):
     """
-    Basic local validation before displaying
-    an answer in the application.
+    Validate generation result before
+    displaying it in Streamlit.
     """
 
     if not isinstance(
@@ -421,22 +376,21 @@ def validate_generation_result(
     ):
         return False
 
+
     answer = result.get(
         "answer",
         ""
     )
 
-    if not answer:
+
+    if not answer or not answer.strip():
         return False
+
 
     if result.get(
         "generation_error"
     ):
         return False
 
-    if result.get(
-        "invalid_references"
-    ):
-        return False
 
     return True
