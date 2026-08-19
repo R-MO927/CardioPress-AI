@@ -1,5 +1,22 @@
 # 🫀 CardioPress AI
 
+<div align="center">
+
+<br>
+
+<a href="https://cardiopressai.streamlit.app/">
+  <img
+    src="https://raw.githubusercontent.com/R-MO927/CardioPress-AI/main/assets/live-demo.svg"
+    alt="❤️ Live Demo — CardioPress AI"
+    width="430"
+  />
+</a>
+
+<br>
+<br>
+
+</div>
+
 ### Evidence-Grounded Cardiovascular Clinical Decision Support using Retrieval-Augmented Generation
 
 CardioPress AI is an **evidence-grounded clinical AI system** designed to answer cardiovascular and hypertension-related clinical questions using **Retrieval-Augmented Generation (RAG)**.
