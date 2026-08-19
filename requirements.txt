@@ -9,3 +9,4 @@ torch
 sentence-transformers
 google-genai
 python-dotenv
+torchvision
